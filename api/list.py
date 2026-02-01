@@ -1,8 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 import json
-import sqlite3
 from urllib.parse import parse_qs, urlparse
-from datetime import datetime
+from .storage import get_expenses
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -12,25 +11,8 @@ class handler(BaseHTTPRequestHandler):
         category = params.get('category', [None])[0]
         sort_param = params.get('sort', [None])[0]
         
-        # Create in-memory database
-        conn = sqlite3.connect(':memory:')
-        cursor = conn.cursor()
-        
-        # Create table
-        cursor.execute('''
-            CREATE TABLE expenses (
-                id INTEGER PRIMARY KEY,
-                idempotency_key TEXT UNIQUE,
-                amount_cents INTEGER,
-                category TEXT,
-                description TEXT,
-                date TEXT,
-                created_at TEXT
-            )
-        ''')
-        
-        # Return empty list for now (data doesn't persist in serverless)
-        expenses = []
+        # Get expenses from shared storage
+        expenses = get_expenses(category, sort_param)
         
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
@@ -40,8 +22,6 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         
         self.wfile.write(json.dumps(expenses).encode())
-        
-        conn.close()
     
     def do_OPTIONS(self):
         self.send_response(200)
