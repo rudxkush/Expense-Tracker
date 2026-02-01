@@ -6,6 +6,6 @@
     "dev": "cd frontend && npm start"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   }
 }
