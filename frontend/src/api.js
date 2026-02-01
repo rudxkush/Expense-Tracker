@@ -43,14 +43,21 @@ export const api = {
       params.append('sort', filters.sort);
     }
 
+    const url = `${API_BASE}/expenses?${params}`;
+    console.log('Fetching expenses from:', url);
+
     try {
-      const response = await fetch(`${API_BASE}/list?${params}`);
+      const response = await fetch(url);
+      
+      console.log('Response status:', response.status);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('Fetched expenses:', data);
+      return data;
     } catch (error) {
       console.error('Get expenses error:', error);
       throw new Error('Failed to fetch expenses');
