@@ -1,7 +1,20 @@
 from http.server import BaseHTTPRequestHandler
 import json
 from datetime import datetime
-from .storage import add_expense
+import os
+
+# Inline storage functions
+def load_expenses():
+    storage_file = '/tmp/expenses.json'
+    if os.path.exists(storage_file):
+        with open(storage_file, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_expenses(expenses):
+    storage_file = '/tmp/expenses.json'
+    with open(storage_file, 'w') as f:
+        json.dump(expenses, f)
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
@@ -9,11 +22,25 @@ class handler(BaseHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data.decode('utf-8'))
         
-        # Add created_at timestamp
-        data['created_at'] = datetime.now().isoformat()
+        expenses = load_expenses()
         
-        # Use shared storage
-        expense = add_expense(data)
+        # Check for existing expense with same idempotency key
+        existing = next((e for e in expenses if e.get('idempotency_key') == data.get('idempotency_key')), None)
+        if existing:
+            expense = existing
+        else:
+            # Create new expense
+            expense = {
+                'id': len(expenses) + 1,
+                'idempotency_key': data.get('idempotency_key'),
+                'amount_cents': int(data['amount'] * 100),
+                'category': data['category'],
+                'description': data['description'],
+                'date': data['date'],
+                'created_at': datetime.now().isoformat()
+            }
+            expenses.append(expense)
+            save_expenses(expenses)
         
         self.send_response(200)
         self.send_header('Content-type', 'application/json')

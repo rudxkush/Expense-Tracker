@@ -1,7 +1,15 @@
 from http.server import BaseHTTPRequestHandler
 import json
+import os
 from urllib.parse import parse_qs, urlparse
-from .storage import get_expenses
+
+# Inline storage functions
+def load_expenses():
+    storage_file = '/tmp/expenses.json'
+    if os.path.exists(storage_file):
+        with open(storage_file, 'r') as f:
+            return json.load(f)
+    return []
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -11,8 +19,18 @@ class handler(BaseHTTPRequestHandler):
         category = params.get('category', [None])[0]
         sort_param = params.get('sort', [None])[0]
         
-        # Get expenses from shared storage
-        expenses = get_expenses(category, sort_param)
+        # Load expenses from shared storage
+        expenses = load_expenses()
+        
+        # Filter by category
+        if category:
+            expenses = [e for e in expenses if e.get('category') == category]
+        
+        # Sort expenses
+        if sort_param == 'date_desc':
+            expenses = sorted(expenses, key=lambda x: x.get('date', ''), reverse=True)
+        else:
+            expenses = sorted(expenses, key=lambda x: x.get('created_at', ''), reverse=True)
         
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
