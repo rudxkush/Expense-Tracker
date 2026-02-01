@@ -8,7 +8,6 @@ from .schemas import ExpenseResponse
 
 app = FastAPI()
 
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,28 +16,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database on startup
 create_tables()
 
-@app.get("/", response_model=List[ExpenseResponse])
-def get_expenses(
+@app.get("/")
+def handler(
     category: Optional[str] = Query(None),
     sort: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Get expenses with optional filtering and sorting"""
-    
     query = db.query(Expense)
     
-    # Filter by category if provided
     if category:
         query = query.filter(Expense.category == category)
     
-    # Sort by date if requested
     if sort == "date_desc":
         query = query.order_by(Expense.date.desc())
     else:
         query = query.order_by(Expense.created_at.desc())
     
     expenses = query.all()
-    return [ExpenseResponse.from_orm(expense) for expense in expenses]
+    return [ExpenseResponse.from_orm(expense).dict() for expense in expenses]
