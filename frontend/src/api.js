@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8000';
+// Use relative URLs for Vercel deployment, fallback to localhost for development
+const API_BASE = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:8000';
 
 // Generate unique idempotency key
 const generateIdempotencyKey = () => {
@@ -21,7 +22,7 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ detail: 'Network error' }));
       throw new Error(error.detail || 'Failed to create expense');
     }
 
@@ -38,7 +39,7 @@ export const api = {
       params.append('sort', filters.sort);
     }
 
-    const response = await fetch(`${API_BASE}/expenses?${params}`);
+    const response = await fetch(`${API_BASE}/list?${params}`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch expenses');

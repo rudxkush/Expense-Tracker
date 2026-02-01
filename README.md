@@ -84,6 +84,22 @@ CREATE TABLE expenses (
 - Conversion handled transparently in API layer
 - Display formatting consistent throughout application
 
+## Deployment
+
+### Vercel Deployment
+This application is configured for deployment on Vercel with:
+- React frontend as static site
+- FastAPI backend as serverless functions
+- Automatic CORS handling
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+1. Push code to GitHub repository
+2. Connect repository to Vercel
+3. Deploy with default settings
+4. API will be available at `/api/expenses` and `/api/list`
+
 ## Running the Application
 
 ### Backend

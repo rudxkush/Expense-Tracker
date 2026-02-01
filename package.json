@@ -1,0 +1,11 @@
+{
+  "name": "expense-tracker",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm start"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
