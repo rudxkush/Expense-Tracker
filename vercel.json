@@ -1,17 +1,7 @@
 {
   "functions": {
     "api/*.py": {
-      "runtime": "python3.9"
+      "runtime": "python3.12"
     }
-  },
-  "routes": [
-    {
-      "src": "/api/expenses",
-      "dest": "/api/expenses.py"
-    },
-    {
-      "src": "/api/list",
-      "dest": "/api/list.py"
-    }
-  ]
+  }
 }
