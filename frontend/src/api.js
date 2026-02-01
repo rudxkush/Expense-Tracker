@@ -10,23 +10,27 @@ export const api = {
   async createExpense(expenseData) {
     const idempotencyKey = generateIdempotencyKey();
     
-    const response = await fetch(`${API_BASE}/expenses`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...expenseData,
-        idempotency_key: idempotencyKey
-      }),
-    });
+    try {
+      const response = await fetch(`${API_BASE}/expenses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...expenseData,
+          idempotency_key: idempotencyKey
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Network error' }));
-      throw new Error(error.detail || 'Failed to create expense');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Create expense error:', error);
+      throw new Error('Failed to create expense');
     }
-
-    return response.json();
   },
 
   async getExpenses(filters = {}) {
@@ -39,12 +43,17 @@ export const api = {
       params.append('sort', filters.sort);
     }
 
-    const response = await fetch(`${API_BASE}/list?${params}`);
-    
-    if (!response.ok) {
+    try {
+      const response = await fetch(`${API_BASE}/list?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Get expenses error:', error);
       throw new Error('Failed to fetch expenses');
     }
-
-    return response.json();
   }
 };

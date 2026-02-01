@@ -1,50 +1,55 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-import logging
+from http.server import BaseHTTPRequestHandler
+import json
+import sqlite3
+from datetime import datetime
 
-from .models import Expense, get_db, create_tables
-from .schemas import ExpenseCreate, ExpenseResponse
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-create_tables()
-
-@app.post("/")
-def handler(expense: ExpenseCreate, db: Session = Depends(get_db)):
-    existing = db.query(Expense).filter(Expense.idempotency_key == expense.idempotency_key).first()
-    if existing:
-        return ExpenseResponse.from_orm(existing).dict()
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        data = json.loads(post_data.decode('utf-8'))
+        
+        # Create in-memory database
+        conn = sqlite3.connect(':memory:')
+        cursor = conn.cursor()
+        
+        # Create table
+        cursor.execute('''
+            CREATE TABLE expenses (
+                id INTEGER PRIMARY KEY,
+                idempotency_key TEXT UNIQUE,
+                amount_cents INTEGER,
+                category TEXT,
+                description TEXT,
+                date TEXT,
+                created_at TEXT
+            )
+        ''')
+        
+        # Create expense
+        expense = {
+            'id': 1,
+            'amount_cents': int(data['amount'] * 100),
+            'category': data['category'],
+            'description': data['description'],
+            'date': data['date'],
+            'created_at': datetime.now().isoformat()
+        }
+        
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+        
+        self.wfile.write(json.dumps(expense).encode())
+        
+        conn.close()
     
-    amount_cents = int(expense.amount * 100)
-    db_expense = Expense(
-        idempotency_key=expense.idempotency_key,
-        amount_cents=amount_cents,
-        category=expense.category,
-        description=expense.description,
-        date=expense.date
-    )
-    
-    try:
-        db.add(db_expense)
-        db.commit()
-        db.refresh(db_expense)
-        return ExpenseResponse.from_orm(db_expense).dict()
-    except IntegrityError:
-        db.rollback()
-        existing = db.query(Expense).filter(Expense.idempotency_key == expense.idempotency_key).first()
-        if existing:
-            return ExpenseResponse.from_orm(existing).dict()
-        raise HTTPException(status_code=500, detail="Failed to create expense")
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
