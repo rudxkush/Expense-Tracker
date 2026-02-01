@@ -25,3 +25,14 @@ class ExpenseResponse(BaseModel):
     
     class Config:
         from_attributes = True
+        
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=obj.id,
+            amount_cents=obj.amount_cents,
+            category=obj.category,
+            description=obj.description,
+            date=obj.date,
+            created_at=obj.created_at
+        )
